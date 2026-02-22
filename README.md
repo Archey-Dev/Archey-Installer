@@ -30,3 +30,9 @@ It is still Arch. You are still in control.
 
 Arch is powerful, but the manual install can be overwhelming.
 This project keeps the power but removes unnecessary friction.
+
+---
+
+## Preview
+
+![Installer Screenshot](assets/Archey1.png)
