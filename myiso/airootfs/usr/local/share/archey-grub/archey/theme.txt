@@ -1,0 +1,74 @@
+# Archey GRUB Theme
+
+title-text:    ""
+desktop-color: "#12111a"
+desktop-image: "background.png"
+
++ boot_menu {
+    left   = 310
+    top    = 240
+    width  = 660
+    height = 280
+
+    item_font           = "Archey Regular 16"
+    item_color          = "#5a5068"
+    selected_item_font  = "Archey Bold 16"
+    selected_item_color = "#f0e6f0"
+
+    icon_width   = 0
+    icon_height  = 0
+    item_height  = 44
+    item_padding = 16
+    item_spacing = 2
+
+    selected_item_pixmap_style = ""
+
+    scrollbar       = true
+    scrollbar_width = 4
+    scrollbar_thumb = "scrollbar_thumb/*.png"
+    scrollbar_frame = "scrollbar_frame/*.png"
+}
+
++ label {
+    top    = 60
+    left   = 0
+    width  = 1280
+    height = 56
+    text   = "Archey"
+    font   = "Archey Bold 24"
+    color  = "#ff6b9d"
+    align  = "center"
+}
+
++ label {
+    top    = 130
+    left   = 0
+    width  = 1280
+    height = 28
+    text   = "select an operating system"
+    font   = "Archey 13"
+    color  = "#2e2b3d"
+    align  = "center"
+}
+
++ label {
+    top    = 620
+    left   = 0
+    width  = 1280
+    height = 24
+    text   = "ENTER  confirm        UP / DOWN  navigate        e  edit        c  console"
+    font   = "Archey 12"
+    color  = "#2a2535"
+    align  = "center"
+}
+
++ label {
+    top    = 700
+    left   = 0
+    width  = 1280
+    height = 20
+    text   = "v0.1.0"
+    font   = "Archey 11"
+    color  = "#1e1a28"
+    align  = "center"
+}
