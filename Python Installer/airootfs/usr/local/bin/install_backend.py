@@ -310,6 +310,19 @@ class InstallWorker(QThread):
 
         self._log(f"Running pacstrap with {len(pkgs)} packages")
 
+        # Ensure live ISO pacman has multilib enabled (needed for lib32 packages)
+        try:
+            with open("/etc/pacman.conf") as f:
+                conf = f.read()
+            if "#[multilib]" in conf:
+                conf = conf.replace("#[multilib]\n#Include", "[multilib]\nInclude")
+                with open("/etc/pacman.conf", "w") as f:
+                    f.write(conf)
+                self._run(["pacman", "-Sy", "--noconfirm"])
+                self._log("Multilib enabled on live ISO")
+        except Exception as e:
+            self._log(f"Warning: could not enable multilib: {e}")
+
         self._run(["pacstrap", "/mnt"] + pkgs)
 
     # ── fstab ─────────────────────────────────────────────────────────────────
@@ -341,6 +354,9 @@ hwclock --systohc
 echo "{s.locale} UTF-8" >> /etc/locale.gen
 locale-gen
 echo "LANG={s.locale}" > /etc/locale.conf
+
+# Enable multilib repo (needed for lib32 packages like lib32-mesa, lib32-nvidia-utils)
+sed -i '/^#\\[multilib\\]/{{N;s/#\\[multilib\\]\\n#Include/[multilib]\\nInclude/}}' /etc/pacman.conf || true
 
 # Hostname
 echo "{s.hostname}" > /etc/hostname
@@ -377,14 +393,16 @@ echo "{s.username}:{s.password}" | chpasswd
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 chmod 440 /etc/sudoers.d/wheel
 
-# Enable NetworkManager
-systemctl enable NetworkManager
-# Enable iwd if installed
-systemctl enable iwd 2>/dev/null || true
+# Enable NetworkManager — critical for post-install networking
+systemctl enable NetworkManager.service || echo "WARNING: NetworkManager enable failed"
+systemctl enable systemd-resolved.service 2>/dev/null || true
+
+# Enable iwd for wifi
+systemctl enable iwd.service 2>/dev/null || true
 
 # Enable user-chosen system services
 for svc in {' '.join(getattr(s, 'system_services', []))}; do
-    systemctl enable "$svc" 2>/dev/null || echo "Note: $svc not enabled (may need user session)"
+    systemctl enable "$svc" 2>/dev/null || echo "Note: $svc not enabled"
 done
 
 # Display manager will be enabled after DE packages are installed
@@ -411,8 +429,9 @@ done
             "grub-install",
             "--target=x86_64-efi",
             "--efi-directory=/boot/efi",
-            "--bootloader-id=ARCH",
-            "--recheck"
+            "--bootloader-id=Archey",
+            "--recheck",
+            "--removable",   # writes fallback EFI path so firmware always finds it
         ])
 
         # ── 2. Copy theme files first (before grub-mkconfig!) ─────────────

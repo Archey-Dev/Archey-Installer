@@ -19,15 +19,73 @@ from theme import (MASTER_STYLE, PINK, PINK_DIM, ROSE, BG, BG2, BG3,
 
 # ── DB sync worker ────────────────────────────────────────────────────────────
 
+FALLBACK_MIRRORLIST = """
+# Archey fallback mirrorlist
+Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+Server = https://mirrors.mit.edu/archlinux/$repo/os/$arch
+Server = https://www.mirrorservice.org/sites/ftp.archlinux.org/$repo/os/$arch
+Server = https://mirror.selfnet.de/archlinux/$repo/os/$arch
+Server = https://mirrors.ircam.fr/pub/archlinux/$repo/os/$arch
+Server = https://mirror.nl.leaseweb.net/archlinux/$repo/os/$arch
+"""
+
 class SyncWorker(QThread):
-    done  = pyqtSignal()
-    error = pyqtSignal(str)
+    done   = pyqtSignal()
+    error  = pyqtSignal(str)
+    status = pyqtSignal(str)
 
     def run(self):
+        # Step 1: Ensure mirrorlist has servers
+        self.status.emit("Checking mirrorlist…")
+        try:
+            with open("/etc/pacman.d/mirrorlist") as f:
+                current = f.read()
+            if not any(l.startswith("Server") for l in current.splitlines()):
+                with open("/etc/pacman.d/mirrorlist", "w") as f:
+                    f.write(FALLBACK_MIRRORLIST)
+        except Exception:
+            try:
+                with open("/etc/pacman.d/mirrorlist", "w") as f:
+                    f.write(FALLBACK_MIRRORLIST)
+            except Exception:
+                pass
+
+        # Step 2: Reflector (non-fatal, short timeout)
+        self.status.emit("Finding fastest mirrors…")
+        try:
+            subprocess.run(
+                ["reflector", "--latest", "10", "--sort", "rate",
+                 "--connection-timeout", "3", "--download-timeout", "3",
+                 "--save", "/etc/pacman.d/mirrorlist"],
+                capture_output=True, text=True, timeout=45
+            )
+        except Exception:
+            pass
+
+        # Step 3: Init keyring only if needed
+        self.status.emit("Checking keyring…")
+        try:
+            result = subprocess.run(
+                ["pacman-key", "--list-keys"],
+                capture_output=True, timeout=10
+            )
+            if result.returncode != 0:
+                self.status.emit("Initialising keyring (this may take a minute)…")
+                subprocess.run(["pacman-key", "--init"],
+                               capture_output=True, timeout=120)
+                subprocess.run(["pacman-key", "--populate", "archlinux"],
+                               capture_output=True, timeout=120)
+        except Exception:
+            pass
+
+        # Step 4: Sync databases
+        self.status.emit("Syncing package databases…")
         try:
             result = subprocess.run(
                 ["pacman", "-Sy", "--noconfirm"],
-                capture_output=True, text=True, timeout=60
+                capture_output=True, text=True, timeout=180
             )
             if result.returncode != 0:
                 self.error.emit(result.stdout + result.stderr)
@@ -255,6 +313,10 @@ class PackagesScreen(QWidget):
         self._sync_worker = SyncWorker()
         self._sync_worker.done.connect(self._on_sync_done)
         self._sync_worker.error.connect(self._on_sync_error)
+        self._sync_worker.status.connect(lambda msg: (
+            self.status_lbl.setText(msg),
+            self.status_lbl.setStyleSheet(f"color: {YELLOW}; font-size: 12px;")
+        ))
         self._sync_worker.start()
 
     def _on_sync_done(self):

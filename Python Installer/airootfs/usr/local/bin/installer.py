@@ -78,10 +78,38 @@ class UEFIBlockScreen(QWidget):
 
         exit_btn = QPushButton("Exit Installer")
         exit_btn.setObjectName("secondary")
+        exit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                    stop:0 {ROSE}, stop:1 {PINK});
+                color: #12111a; border: none;
+                border-radius: 8px;
+                font-size: 14px; font-weight: bold;
+                letter-spacing: 1px;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                    stop:0 {PINK}, stop:1 {PINK2});
+            }}
+        """)
         exit_btn.clicked.connect(lambda: QApplication.quit())
 
         continue_btn = QPushButton("Continue Anyway →")
         continue_btn.setObjectName("primary")
+        continue_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                    stop:0 {ROSE}, stop:1 {PINK});
+                color: #12111a; border: none;
+                border-radius: 8px;
+                font-size: 14px; font-weight: bold;
+                letter-spacing: 1px;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                    stop:0 {PINK}, stop:1 {PINK2});
+            }}
+        """)
         continue_btn.clicked.connect(self.proceed.emit)
 
         btn_row.addStretch()
@@ -444,10 +472,14 @@ class MainWindow(QMainWindow):
         self._goto(4)
 
     def _presync_db(self):
-        """Fire pacman -Sy in background right after internet is available."""
+        """Init keyring, refresh mirrors, then sync pacman db."""
         try:
             subprocess.Popen(
-                ["pacman", "-Sy", "--noconfirm"],
+                ["/bin/sh", "-c",
+                 "pacman-key --init"
+                 " && pacman-key --populate archlinux"
+                 " && reflector --latest 20 --sort rate --save /etc/pacman.d/mirrorlist"
+                 " && pacman -Sy --noconfirm"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )

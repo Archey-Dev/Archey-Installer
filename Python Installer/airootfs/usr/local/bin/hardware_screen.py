@@ -83,15 +83,14 @@ GPU_OPTIONS = [
     {
         "id":       "amd",
         "name":     "AMD / ATI",
-        "desc":     "xf86-video-amdgpu, mesa, vulkan-radeon, lib32-mesa",
-        "packages": ["xf86-video-amdgpu", "mesa", "vulkan-radeon",
-                     "lib32-mesa", "lib32-vulkan-radeon"],
+        "desc":     "xf86-video-amdgpu, mesa, vulkan-radeon, lib32-vulkan-radeon",
+        "packages": ["xf86-video-amdgpu", "mesa", "vulkan-radeon", "lib32-vulkan-radeon"],
     },
     {
         "id":       "intel",
         "name":     "Intel",
-        "desc":     "xf86-video-intel, mesa, vulkan-intel, lib32-mesa",
-        "packages": ["xf86-video-intel", "mesa", "vulkan-intel", "lib32-mesa"],
+        "desc":     "xf86-video-intel, mesa, vulkan-intel",
+        "packages": ["xf86-video-intel", "mesa", "vulkan-intel"],
     },
     {
         "id":       "vm",
