@@ -24,6 +24,7 @@ from locale_screen import LocaleScreen
 from packages_screen  import PackagesScreen
 from hardware_screen  import HardwareScreen
 from system_screen   import SystemScreen
+from advanced_screen import AdvancedScreen
 from install_screen import InstallScreen
 
 
@@ -146,6 +147,8 @@ class InstallState:
         self.gpu_packages    = []
         self.system_packages = []
         self.system_services = []
+        self.kernel_choice   = "linux"
+        self.advanced_packages = []
         self.disk           = {}
         self.efi_partition  = {}
         self.arch_size_gb   = 40.0
@@ -161,7 +164,7 @@ class InstallState:
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
 STEPS = ["Welcome", "Language", "Wi-Fi", "Disk Setup",
-         "User Setup", "Desktop", "Hardware", "Packages", "System", "Install", "Done"]
+         "User Setup", "Desktop", "Hardware", "Packages", "Advanced", "System", "Install", "Done"]
 
 class Sidebar(QFrame):
     def __init__(self):
@@ -429,18 +432,24 @@ class MainWindow(QMainWindow):
         self.packages.back.connect(lambda: self._goto(7))
         self.stack.addWidget(self.packages)
 
-        # 8 — System setup (audio / bluetooth / printing)
+        # 8 — Advanced options (kernel + optional extras)
+        self.advanced = AdvancedScreen()
+        self.advanced.confirmed.connect(self._on_advanced_confirmed)
+        self.advanced.back.connect(lambda: self._goto(8))
+        self.stack.addWidget(self.advanced)
+
+        # 9 — System setup (audio / bluetooth / printing)
         self.system = SystemScreen()
         self.system.confirmed.connect(self._on_system_confirmed)
-        self.system.back.connect(lambda: self._goto(8))
+        self.system.back.connect(lambda: self._goto(9))
         self.stack.addWidget(self.system)
 
-        # 9 — Install
+        # 10 — Install
         self.install_screen = InstallScreen()
-        self.install_screen.finished.connect(lambda: self._goto(11))
+        self.install_screen.finished.connect(lambda: self._goto(12))
         self.stack.addWidget(self.install_screen)
 
-        # 10 — Done
+        # 11 — Done
         self.done = DoneScreen()
         self.stack.addWidget(self.done)
 
@@ -523,10 +532,15 @@ class MainWindow(QMainWindow):
         self.state.user_packages = packages
         self._goto(9)
 
+    def _on_advanced_confirmed(self, kernel_choice: str, extra_packages: list):
+        self.state.kernel_choice = kernel_choice
+        self.state.advanced_packages = extra_packages
+        self._goto(10)
+
     def _on_system_confirmed(self, packages: list, services: list):
         self.state.system_packages = packages
         self.state.system_services = services
-        self._goto(10)
+        self._goto(11)
         self.install_screen.start(self.state)
 
 

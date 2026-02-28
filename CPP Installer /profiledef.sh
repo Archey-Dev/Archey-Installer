@@ -2,7 +2,7 @@
 # shellcheck disable=SC2034
 
 iso_name="archey"
-iso_label="Archey_Python_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
+iso_label="Archey_$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y%m)"
 iso_publisher="Archey Dev"
 iso_application="Archey Installation Framework"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
@@ -22,5 +22,5 @@ file_permissions=(
   ["/usr/local/bin/choose-mirror"]="0:0:755"
   ["/usr/local/bin/Installation_guide"]="0:0:755"
   ["/usr/local/bin/livecd-sound"]="0:0:755"
-  ["/usr/local/bin/installer.py"]="0:0:755"
+  ["/usr/local/bin/archey"]="0:0:755"
 )

@@ -94,7 +94,7 @@ PRINTING_OPTIONS = [
                     "HP and Epson driver support.",
         "packages": [
             "cups", "cups-pdf", "system-config-printer",
-            "hplip", "epson-inkjet-printer-escpr",
+            "hplip",
         ],
         "systemd":  ["cups"],
         "default":  True,

@@ -1,0 +1,84 @@
+# ── Shells & Essential Config (The "No Shell" Fix") ──────────────────────────
+zsh
+grml-zsh-config
+bash
+coreutils
+util-linux
+grep
+sed
+gawk
+
+# ── ISO Bootloader Essentials ─────────────────────────────────────────────────
+syslinux
+pkgfile
+memtest86+
+memtest86+-efi
+mkinitcpio-archiso
+edk2-shell
+efibootmgr
+intel-ucode
+amd-ucode
+
+# ── Core System ───────────────────────────────────────────────────────────────
+base
+base-devel
+linux
+linux-firmware
+linux-headers
+mkinitcpio
+
+# ── Installer Essentials ──────────────────────────────────────────────────────
+arch-install-scripts
+qt6-base
+
+# ── Networking ────────────────────────────────────────────────────────────────
+iwd
+networkmanager
+nm-connection-editor
+wireless_tools
+wpa_supplicant
+dhcpcd
+
+# ── Disk & Partitioning ───────────────────────────────────────────────────────
+parted
+gptfdisk
+gparted
+e2fsprogs
+dosfstools
+mtools
+ntfs-3g
+btrfs-progs
+exfatprogs
+
+# ── Target System Bootloader ──────────────────────────────────────────────────
+grub
+os-prober
+
+# ── Display server (for PyQt6 installer) ─────────────────────────────────────
+xorg-server
+xorg-xinit
+xorg-xrandr
+xf86-video-vesa
+xf86-video-intel
+xf86-video-amdgpu
+xf86-input-libinput
+mesa
+libxcb
+xcb-util-cursor
+
+# ── Fonts ─────────────────────────────────────────────────────────────────────
+ttf-dejavu
+ttf-liberation
+noto-fonts
+
+# ── Quality of Life ───────────────────────────────────────────────────────────
+sudo
+git
+nano
+vim
+curl
+wget
+bash-completion
+man-db
+man-pages
+reflector

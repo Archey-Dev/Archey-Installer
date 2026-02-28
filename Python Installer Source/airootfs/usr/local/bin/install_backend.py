@@ -15,13 +15,19 @@ from PyQt6.QtCore import QThread, pyqtSignal
 # ── Packages ──────────────────────────────────────────────────────────────────
 
 BASE_PACKAGES = [
-    "base", "base-devel", "linux", "linux-firmware",
-    "linux-headers", "mkinitcpio", "networkmanager",
-    "iwd",
+    "base", "base-devel", "linux-firmware",
+    "mkinitcpio", "networkmanager", "iwd",
     "sudo", "nano", "vim", "git", "curl", "wget",
     "grub", "efibootmgr", "os-prober",
     "bash-completion", "man-db", "man-pages",
 ]
+
+KERNEL_PACKAGES = {
+    "linux": ["linux", "linux-headers"],
+    "linux-zen": ["linux-zen", "linux-zen-headers"],
+    "linux-hardened": ["linux-hardened", "linux-hardened-headers"],
+    "linux-lts": ["linux-lts", "linux-lts-headers"],
+}
 
 CPU_PACKAGES = {
     "intel": ["intel-ucode"],
@@ -290,16 +296,22 @@ class InstallWorker(QThread):
     # ── pacstrap ──────────────────────────────────────────────────────────────
 
     def _pacstrap(self, s):
-        pkgs   = BASE_PACKAGES.copy()
-        # CPU and GPU packages from hardware screen selection
-        pkgs  += getattr(s, "cpu_packages", [])
-        pkgs  += getattr(s, "gpu_packages", [])
+        pkgs = BASE_PACKAGES.copy()
 
-        # Add user-selected packages (search picks + system setup)
+        # Selected kernel package set (fallback to regular linux)
+        kernel_choice = getattr(s, "kernel_choice", "linux")
+        pkgs += KERNEL_PACKAGES.get(kernel_choice, KERNEL_PACKAGES["linux"])
+
+        # CPU and GPU packages from hardware screen selection
+        pkgs += getattr(s, "cpu_packages", [])
+        pkgs += getattr(s, "gpu_packages", [])
+
+        # Add user-selected packages (search picks + advanced extras + system setup)
         de_pkgs   = set(s.de.get("packages", [])) if s.de else set()
         all_extra = (
-            getattr(s, "user_packages",   []) +
-            getattr(s, "system_packages", [])
+            getattr(s, "user_packages",     []) +
+            getattr(s, "advanced_packages", []) +
+            getattr(s, "system_packages",   [])
         )
         seen_extra = set(pkgs)
         for p in all_extra:
@@ -546,7 +558,61 @@ done
             "arch-chroot", "/mnt",
             "grub-mkconfig", "-o", "/boot/grub/grub.cfg"
         ])
+
+        # ── 7. Prioritize Archey/Arch boot entry in UEFI boot order ───────
+        self._prioritize_boot_entry()
+
         self._log("GRUB installed and configured with Archey theme")
+
+    def _prioritize_boot_entry(self):
+        """Move Archey/Arch EFI boot entry to the front of BootOrder (non-fatal)."""
+        try:
+            out = self._run_output(["arch-chroot", "/mnt", "efibootmgr"])
+        except Exception as e:
+            self._log(f"Warning: could not read EFI boot entries: {e}")
+            return
+
+        lines = out.splitlines()
+        boot_order = None
+        entries = {}
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("BootOrder:"):
+                boot_order = [x.strip().upper() for x in line.split(":", 1)[1].split(",") if x.strip()]
+                continue
+
+            if line.startswith("Boot") and "*" in line and len(line) >= 8:
+                # Example: Boot0001* Archey
+                boot_id = line[4:8].upper()
+                label = line.split("*", 1)[1].strip().lower()
+                entries[boot_id] = label
+
+        if not boot_order:
+            self._log("Warning: EFI BootOrder not found; skipping boot prioritization")
+            return
+
+        preferred = None
+        for bid, label in entries.items():
+            if "archey" in label or "arch linux" in label or "arch" == label:
+                preferred = bid
+                break
+
+        if not preferred:
+            self._log("Warning: no Archey/Arch EFI entry found to prioritize")
+            return
+
+        new_order = [preferred] + [b for b in boot_order if b != preferred]
+        order_str = ",".join(new_order)
+
+        res = self._run([
+            "arch-chroot", "/mnt", "efibootmgr", "-o", order_str
+        ], check=False)
+
+        if res.returncode == 0:
+            self._log(f"Set EFI BootOrder with {preferred} first: {order_str}")
+        else:
+            self._log("Warning: failed to update EFI BootOrder (continuing)")
 
     # ── Desktop environment ───────────────────────────────────────────────────
 
